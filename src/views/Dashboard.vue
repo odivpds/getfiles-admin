@@ -103,7 +103,7 @@
     <div v-if="generatedText" class="mt-14 md:mt-16 bg-[#151b28] border border-gray-700/50 rounded-xl p-4 md:p-6 shadow-2xl relative">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-sm font-bold text-gray-300">Hasil Generate ({{ form.count }} Link)</h3>
-        <button @click="copyToClipboard" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded transition">Copy All</button>
+        <button @click="copyToClipboard" :class="copyBtnText === 'Copy All' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-green-600 hover:bg-green-500'" class="text-xs text-white px-3 py-1 rounded transition min-w-[80px] text-center">{{ copyBtnText }}</button>
       </div>
       <textarea v-model="generatedText" readonly rows="10" class="w-full bg-[#0d131f] border border-gray-700 text-gray-300 text-sm font-mono rounded-md p-4 focus:outline-none scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800"></textarea>
     </div>
@@ -128,6 +128,7 @@ const api = axios.create({
 const videos = ref([])
 const syncing = ref(false)
 const generatedText = ref('')
+const copyBtnText = ref('Copy All')
 
 const form = ref({
   domain: 'domain_anda.com',
@@ -194,7 +195,7 @@ const generateLinks = () => {
     if (form.value.postModel === 'model1') {
       result += `${url}\n`
     } else if (form.value.postModel === 'model2') {
-      result += `${vid.title}\nTonton disini: ${url}\n\n`
+      result += `${vid.title}\n${url}\n\n`
     } else if (form.value.postModel === 'model3') {
       result += `<p>${vid.title}<br><a href="${url}">${url}</a></p>\n`
     }
@@ -205,7 +206,12 @@ const generateLinks = () => {
 
 const copyToClipboard = () => {
   navigator.clipboard.writeText(generatedText.value)
-    .then(() => alert('Teks berhasil disalin!'))
+    .then(() => {
+      copyBtnText.value = 'Tercopy! ✅'
+      setTimeout(() => {
+        copyBtnText.value = 'Copy All'
+      }, 2000)
+    })
     .catch(err => console.error('Gagal copy: ', err))
 }
 
