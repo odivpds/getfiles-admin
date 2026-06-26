@@ -43,10 +43,10 @@
         <div class="space-y-2">
           <label class="block text-xs font-bold text-gray-400 tracking-wider uppercase">Format Path URL</label>
           <select v-model="form.pathFormat" class="w-full bg-[#0d131f] border border-gray-700 text-gray-200 text-sm rounded-md px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none">
-            <option value="/?id=">Query /?id= (domain.com/?id=video-1)</option>
-            <option value="/video/">Path /video/ (domain.com/video/video-1)</option>
-            <option value="/amplify_video/">Path /amplify_video/ (domain.com/amplify_video/...)</option>
-            <option value="/watch/">Path /watch/ (domain.com/watch/video-1)</option>
+            <option value="/?v=">Query Parameter (domain.com/?v=video-1) - AMAN UNTUK GITHUB</option>
+            <option value="/#/">Hash Parameter (domain.com/#/video-1) - AMAN UNTUK GITHUB</option>
+            <option value="/video/">Path /video/ (Bukan untuk Github)</option>
+            <option value="/amplify_video/">Path /amplify_video/ (Bukan untuk Github)</option>
           </select>
         </div>
 
@@ -131,7 +131,7 @@ const generatedText = ref('')
 
 const form = ref({
   domain: 'domain_anda.com',
-  pathFormat: '/amplify_video/',
+  pathFormat: '/?v=',
   postModel: 'model2',
   count: 5,
   method: 'acak'
