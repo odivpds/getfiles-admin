@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full max-w-4xl mx-auto">
+  <div class="w-full max-w-5xl mx-auto">
     <!-- Header -->
     <div class="text-center mb-6 md:mb-8">
       <h1 class="text-2xl md:text-4xl font-extrabold text-white tracking-tight mb-2">Viral Video Generator</h1>
@@ -101,11 +101,42 @@
 
     <!-- Output Box (Muncul Jika Ada Hasil) -->
     <div v-if="generatedText" class="mt-14 md:mt-16 bg-[#151b28] border border-gray-700/50 rounded-xl p-4 md:p-6 shadow-2xl relative">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-sm font-bold text-gray-300">Hasil Generate ({{ form.count }} Link)</h3>
-        <button @click="copyToClipboard" :class="copyBtnText === 'Copy All' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-green-600 hover:bg-green-500'" class="text-xs text-white px-3 py-1 rounded transition min-w-[80px] text-center">{{ copyBtnText }}</button>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Kolom Kiri: Teks Link -->
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-gray-300">Hasil Generate ({{ form.count }} Link)</h3>
+            <button @click="copyToClipboard" :class="copyBtnText === 'Copy All' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-green-600 hover:bg-green-500'" class="text-xs text-white px-3 py-1 rounded transition min-w-[80px] text-center">{{ copyBtnText }}</button>
+          </div>
+          <textarea v-model="generatedText" readonly rows="14" class="w-full bg-[#0d131f] border border-gray-700 text-gray-300 text-sm font-mono rounded-md p-4 focus:outline-none scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800"></textarea>
+        </div>
+
+        <!-- Kolom Kanan: Thumbnails -->
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-gray-300">Thumbnails</h3>
+          </div>
+          <div class="grid grid-cols-2 gap-4 h-[310px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-[#0d131f] pr-2">
+            <div v-for="vid in generatedVideos" :key="vid.id" class="bg-[#0d131f] rounded-lg border border-gray-700 overflow-hidden flex flex-col">
+              <div @click="downloadThumbnail(vid)" class="w-full relative pt-[56.25%] bg-black cursor-pointer group" title="Klik untuk Download Foto">
+                <img :src="`https://vz-80a83061-403.b-cdn.net/${vid.bunny_id}/thumbnail.jpg`" class="absolute top-0 left-0 w-full h-full object-cover group-hover:opacity-60 transition-opacity duration-300" :alt="vid.title">
+                
+                <!-- Icon Download Muncul Saat Hover -->
+                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  <div class="bg-indigo-600/90 text-white p-2 rounded-full shadow-lg transform scale-90 group-hover:scale-100 transition-transform duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div class="p-3">
+                <p class="text-[11px] text-gray-300 line-clamp-2 leading-snug" :title="vid.title">{{ vid.title }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <textarea v-model="generatedText" readonly rows="10" class="w-full bg-[#0d131f] border border-gray-700 text-gray-300 text-sm font-mono rounded-md p-4 focus:outline-none scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800"></textarea>
     </div>
 
   </div>
@@ -129,6 +160,8 @@ const videos = ref([])
 const syncing = ref(false)
 const generatedText = ref('')
 const copyBtnText = ref('Copy All')
+const generatedVideos = ref([])
+const currentIndex = ref(0)
 
 const form = ref({
   domain: 'domain_anda.com',
@@ -174,22 +207,45 @@ const generateLinks = () => {
   // Clone array agar tidak mengubah aslinya
   let pool = [...videos.value]
 
+  const count = parseInt(form.value.count, 10) || 5
+  let selected = []
+
   // Acak atau Berurutan
   if (form.value.method === 'acak') {
     pool = pool.sort(() => 0.5 - Math.random())
+    selected = pool.slice(0, count)
   } else {
-    // Asumsi berurutan terbaru (sudah terbaru dari backend orderBy DESC)
+    // Berurutan: Lanjutkan dari index sebelumnya
+    const start = currentIndex.value
+    let end = start + count
+    selected = pool.slice(start, end)
+    
+    // Jika data tidak cukup di ujung array, ambil sisanya dari awal
+    if (selected.length < count) {
+      const diff = count - selected.length
+      selected = [...selected, ...pool.slice(0, diff)]
+      currentIndex.value = diff
+    } else {
+      currentIndex.value = end
+    }
+    
+    // Reset index jika sudah melebihi batas array
+    if (currentIndex.value >= pool.length) {
+      currentIndex.value = 0
+    }
   }
 
-  // Potong array sesuai jumlah yang diminta
-  const selected = pool.slice(0, form.value.count)
+  generatedVideos.value = selected
 
   let result = ''
   const domain = form.value.domain.replace(/^https?:\/\//, '').replace(/\/$/, '')
 
   selected.forEach(vid => {
-    // Susun URL
-    const url = `https://${domain}${form.value.pathFormat}${vid.slug}`
+    // Ambil 5 karakter terakhir dari slug (Unik ID)
+    const shortId = vid.slug.slice(-5)
+
+    // Susun URL hanya menggunakan ID unik ditambah akhiran .mp4
+    const url = `https://${domain}${form.value.pathFormat}${shortId}.mp4`
 
     // Susun Format Teks
     if (form.value.postModel === 'model1') {
@@ -213,6 +269,32 @@ const copyToClipboard = () => {
       }, 2000)
     })
     .catch(err => console.error('Gagal copy: ', err))
+}
+
+const downloadThumbnail = async (vid) => {
+  const url = `https://vz-80a83061-403.b-cdn.net/${vid.bunny_id}/thumbnail.jpg`
+  try {
+    const response = await fetch(url)
+    if (!response.ok) throw new Error('Network error')
+    const blob = await response.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = `${vid.slug}.jpg`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(blobUrl)
+  } catch (e) {
+    // Fallback jika terblokir CORS
+    const a = document.createElement('a')
+    a.href = url
+    a.target = '_blank'
+    a.download = `${vid.slug}.jpg`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
 }
 
 onMounted(() => {
